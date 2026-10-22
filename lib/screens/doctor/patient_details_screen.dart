@@ -6,6 +6,7 @@ import '../../services/db_service.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
 import '../add_record_screen.dart';
+import '../chat_screen.dart';
 import '../prescriptions_screen.dart';
 import '../record_view_screen.dart';
 import 'create_prescription_screen.dart';
@@ -84,6 +85,24 @@ class PatientDetailsScreen extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  final cId = DB.chatId(patientId, DB.uid);
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => ChatScreen(
+                            chatId: cId,
+                            otherName: patientName,
+                            myId: DB.uid,
+                            myName: DB.myName,
+                          )));
+                },
+                icon: const Icon(Icons.chat_outlined),
+                label: const Text('Chat with Patient'),
+              ),
             ),
 
             // Appointments with this doctor

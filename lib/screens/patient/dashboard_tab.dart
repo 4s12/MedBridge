@@ -5,6 +5,7 @@ import '../../models.dart';
 import '../../services/db_service.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
+import '../invoices_screen.dart';
 import '../prescriptions_screen.dart';
 import '../record_view_screen.dart';
 import 'doctor_profile_screen.dart';
@@ -95,10 +96,25 @@ class PatientDashboard extends StatelessWidget {
                   () => Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => PrescriptionsScreen(patientId: uid)))),
               const SizedBox(width: 10),
-              _quick(context, Icons.calendar_month, 'My\nAppointments',
-                  () => onSwitchTab(1)),
+              _quick(
+                  context,
+                  Icons.receipt_long,
+                  'My\nInvoices',
+                  () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => InvoicesScreen(patientId: uid)))),
             ],
           ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _quick(context, Icons.calendar_month, 'My\nAppointments',
+                  () => onSwitchTab(1)),
+              const SizedBox(width: 10),
+              // Placeholder spacer so grid looks correct
+              const Expanded(child: SizedBox()),
+            ],
+          ),
+
           const SectionTitle('Upcoming Appointment'),
           StreamBuilder<List<Appointment>>(
             stream: DB.patientAppointments(uid),
@@ -122,38 +138,25 @@ class PatientDashboard extends StatelessWidget {
                   a: upcoming.first, onTap: () => onSwitchTab(1));
             },
           ),
+
           SectionTitle('Top Doctors',
               trailing: TextButton(
                   onPressed: () => _openSearch(context),
                   child: const Text('View all'))),
-          ValueListenableBuilder<Map<String, List<Map<String, dynamic>>>>(
-            valueListenable: DoctorProfileScreen.sessionReviews,
-            builder: (context, reviewsMap, _) {
-              return StreamBuilder<List<Doctor>>(
-                stream: DB.doctors(),
-                builder: (context, snap) {
-                  final docs = [...(snap.data ?? <Doctor>[])];
-                  
-                  double getRating(Doctor d) {
-                    final local = reviewsMap[d.id] ?? [];
-                if (local.isEmpty) return d.rating;
-                double total = d.rating * d.reviewCount;
-                for (final r in local) {
-                  total += (r['rating'] as num).toDouble();
-                }
-                return double.parse((total / (d.reviewCount + local.length)).toStringAsFixed(1));
-              }
-
-              docs.sort((a, b) => getRating(b).compareTo(getRating(a)));
+          StreamBuilder<List<Doctor>>(
+            stream: DB.doctors(),
+            builder: (context, snap) {
               if (!snap.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
+              final docs = [...(snap.data ?? <Doctor>[])];
+              docs.sort((a, b) => b.rating.compareTo(a.rating));
               if (docs.isEmpty) {
                 return const Card(
                   child: Padding(
                     padding: EdgeInsets.all(16),
                     child: Text(
-                        'No doctors have registered yet. Register a doctor account to see them here.'),
+                        'No doctors have registered yet.'),
                   ),
                 );
               }
@@ -198,7 +201,7 @@ class PatientDashboard extends StatelessWidget {
                                   children: [
                                     const Icon(Icons.star,
                                         size: 14, color: Colors.amber),
-                                    Text(' ${getRating(d)}',
+                                    Text(' ${d.rating}',
                                         style: const TextStyle(fontSize: 12)),
                                   ],
                                 ),
@@ -212,9 +215,8 @@ class PatientDashboard extends StatelessWidget {
                 ),
               );
             },
-          );
-            },
           ),
+
           SectionTitle('Recent Records',
               trailing: TextButton(
                   onPressed: () => onSwitchTab(2),

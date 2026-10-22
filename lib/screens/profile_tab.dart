@@ -5,6 +5,8 @@ import '../services/db_service.dart';
 import '../theme.dart';
 import '../utils/validators.dart';
 import '../widgets/common.dart';
+import 'doctor/availability_editor_screen.dart';
+import 'invoices_screen.dart';
 import 'settings_screen.dart';
 
 class ProfileTab extends StatelessWidget {
@@ -135,6 +137,35 @@ class ProfileTab extends StatelessWidget {
                 label: const Text('Edit Profile'),
               ),
               const SizedBox(height: 10),
+              if (role == 'doctor') ...[
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final doc = await DB.getDoctor(uid);
+                    if (!context.mounted) return;
+                    if (doc == null) return;
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => AvailabilityEditorScreen(doctor: doc)));
+                  },
+                  icon: const Icon(Icons.schedule_outlined),
+                  label: const Text('Manage Availability'),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => DoctorInvoicesScreen(doctorId: uid))),
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  label: const Text('Billing & Invoices'),
+                ),
+                const SizedBox(height: 10),
+              ] else ...[
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => InvoicesScreen(patientId: uid))),
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  label: const Text('My Invoices'),
+                ),
+                const SizedBox(height: 10),
+              ],
               OutlinedButton.icon(
                 onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const SettingsScreen())),

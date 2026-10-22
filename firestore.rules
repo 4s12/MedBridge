@@ -3,16 +3,16 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn() { return request.auth != null; }
-    function verified() { return signedIn() && request.auth.token.email_verified == true; }
+    // Relaxed: signedIn is enough (no mandatory email verification for writes)
+    function verified() { return signedIn(); }
     function myDoc() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
     function myRole() { return myDoc().role; }
-    function isDoctor() { return verified() && myRole() == 'doctor'; }
-    function isAdmin()  { return verified() && myRole() == 'admin'; }
+    function isDoctor() { return signedIn() && myRole() == 'doctor'; }
+    function isAdmin()  { return signedIn() && myRole() == 'admin'; }
 
     // ─── User profiles ────────────────────────────────────────────────
-    // Role can be set only at creation and never changed to 'admin'.
     match /users/{uid} {
       allow read: if signedIn() && (
         request.auth.uid == uid || isDoctor() || isAdmin()
@@ -20,10 +20,8 @@ service cloud.firestore {
       allow create: if signedIn() && request.auth.uid == uid
                     && request.resource.data.role in ['patient', 'doctor'];
       allow update: if signedIn() && (
-        // Owner can update own doc but cannot change role
         (request.auth.uid == uid
          && request.resource.data.role == resource.data.role)
-        // Admin can update any user (e.g. enable/disable)
         || isAdmin()
       );
     }
@@ -44,10 +42,10 @@ service cloud.firestore {
         || resource.data.doctorId == request.auth.uid
         || isAdmin()
       );
-      allow create: if verified()
+      allow create: if signedIn()
                     && request.resource.data.patientId == request.auth.uid
                     && request.resource.data.status == 'pending';
-      allow update: if verified() && (
+      allow update: if signedIn() && (
         resource.data.patientId == request.auth.uid
         || resource.data.doctorId == request.auth.uid
         || isAdmin()
@@ -56,7 +54,7 @@ service cloud.firestore {
 
     // ─── Slot locks (prevent double booking) ──────────────────────────
     match /bookedSlots/{id} {
-      allow read, create, delete: if verified();
+      allow read, create, delete: if signedIn();
     }
 
     // ─── Medical records ──────────────────────────────────────────────
@@ -66,10 +64,10 @@ service cloud.firestore {
         || isDoctor()
         || isAdmin()
       );
-      allow create: if verified()
+      allow create: if signedIn()
                     && request.resource.data.addedBy == request.auth.uid
                     && (request.resource.data.patientId == request.auth.uid || isDoctor());
-      allow delete: if verified() && resource.data.addedBy == request.auth.uid;
+      allow delete: if signedIn() && resource.data.addedBy == request.auth.uid;
     }
 
     // ─── Prescriptions ───────────────────────────────────────────────
@@ -92,18 +90,19 @@ service cloud.firestore {
 
     // ─── Chat ────────────────────────────────────────────────────────
     match /chats/{chatId} {
-      allow read, create, update: if verified();
+      allow read, create, update: if signedIn();
       match /messages/{msgId} {
-        allow read, create: if verified();
-        allow update: if verified(); // for read receipts
+        allow read, create: if signedIn();
+        allow update: if signedIn(); // for read receipts
       }
     }
 
     // ─── Reviews ─────────────────────────────────────────────────────
     match /reviews/{id} {
       allow read: if signedIn();
-      allow create: if verified()
+      allow create: if signedIn()
                     && request.resource.data.patientId == request.auth.uid;
+      allow update: if signedIn() && resource.data.patientId == request.auth.uid;
     }
 
     // ─── Invoices ────────────────────────────────────────────────────
@@ -113,7 +112,7 @@ service cloud.firestore {
         || resource.data.doctorId == request.auth.uid
         || isAdmin()
       );
-      allow create, update: if verified();
+      allow create, update: if signedIn();
     }
   }
 }

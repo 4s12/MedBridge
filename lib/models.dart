@@ -55,6 +55,35 @@ class Doctor {
       availability: (m['availability'] as Map<String, dynamic>?) ?? {},
     );
   }
+
+  Doctor copyWith({
+    String? name,
+    String? specialization,
+    String? hospital,
+    String? about,
+    int? experienceYears,
+    int? fee,
+    bool? isVerified,
+    bool? isEnabled,
+    String? medicalRegNo,
+    Map<String, dynamic>? availability,
+  }) {
+    return Doctor(
+      id: id,
+      name: name ?? this.name,
+      specialization: specialization ?? this.specialization,
+      hospital: hospital ?? this.hospital,
+      about: about ?? this.about,
+      experienceYears: experienceYears ?? this.experienceYears,
+      fee: fee ?? this.fee,
+      reviewCount: reviewCount,
+      rating: rating,
+      isVerified: isVerified ?? this.isVerified,
+      isEnabled: isEnabled ?? this.isEnabled,
+      medicalRegNo: medicalRegNo ?? this.medicalRegNo,
+      availability: availability ?? this.availability,
+    );
+  }
 }
 
 /// Represents a booked appointment.
@@ -163,6 +192,94 @@ class ChatMessage {
           ? (m['timestamp'] as Timestamp).toDate()
           : DateTime.now(),
       isRead: _b(m, 'isRead'),
+    );
+  }
+}
+
+/// Represents a doctor review from a patient.
+class Review {
+  final String id;
+  final String doctorId;
+  final String patientId;
+  final String patientName;
+  final double rating;
+  final String comment;
+  final DateTime createdAt;
+
+  const Review({
+    required this.id,
+    required this.doctorId,
+    required this.patientId,
+    required this.patientName,
+    required this.rating,
+    required this.comment,
+    required this.createdAt,
+  });
+
+  factory Review.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
+    final m = d.data() ?? <String, dynamic>{};
+    return Review(
+      id: d.id,
+      doctorId: _s(m, 'doctorId'),
+      patientId: _s(m, 'patientId'),
+      patientName: _s(m, 'patientName'),
+      rating: _d(m, 'rating'),
+      comment: _s(m, 'comment'),
+      createdAt: m['createdAt'] is Timestamp
+          ? (m['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
+}
+
+/// Represents a billing invoice for an appointment.
+class Invoice {
+  final String id;
+  final String appointmentId;
+  final String patientId;
+  final String patientName;
+  final String doctorId;
+  final String doctorName;
+  final String date;
+  final String timeSlot;
+  final int fee;
+  final String status; // unpaid | paid | cancelled
+  final DateTime createdAt;
+
+  const Invoice({
+    required this.id,
+    required this.appointmentId,
+    required this.patientId,
+    required this.patientName,
+    required this.doctorId,
+    required this.doctorName,
+    required this.date,
+    required this.timeSlot,
+    required this.fee,
+    required this.status,
+    required this.createdAt,
+  });
+
+  bool get isPaid => status == 'paid';
+  bool get isPending => status == 'unpaid';
+  bool get isCancelled => status == 'cancelled';
+
+  factory Invoice.fromDoc(DocumentSnapshot<Map<String, dynamic>> d) {
+    final m = d.data() ?? <String, dynamic>{};
+    return Invoice(
+      id: d.id,
+      appointmentId: _s(m, 'appointmentId'),
+      patientId: _s(m, 'patientId'),
+      patientName: _s(m, 'patientName'),
+      doctorId: _s(m, 'doctorId'),
+      doctorName: _s(m, 'doctorName'),
+      date: _s(m, 'date'),
+      timeSlot: _s(m, 'timeSlot'),
+      fee: _i(m, 'fee'),
+      status: _s(m, 'status'),
+      createdAt: m['createdAt'] is Timestamp
+          ? (m['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
     );
   }
 }

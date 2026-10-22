@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../models.dart';
+import '../../services/db_service.dart';
 import '../../services/notification_service.dart';
 import '../../widgets/common.dart';
+import '../invoices_screen.dart';
 import '../notifications_screen.dart';
 import '../profile_tab.dart';
+import 'availability_editor_screen.dart';
 import 'doctor_dashboard.dart';
 import 'patients_tab.dart';
 import 'requests_tab.dart';
@@ -24,7 +28,7 @@ class _DoctorHomeState extends State<DoctorHome> {
     'Doctor Dashboard',
     'Appointment Requests',
     'My Patients',
-    'Profile'
+    'Profile',
   ];
 
   @override
@@ -39,13 +43,40 @@ class _DoctorHomeState extends State<DoctorHome> {
     super.dispose();
   }
 
+  void _openAvailability() async {
+    final doc = await DB.getDoctor(widget.uid);
+    if (!mounted) return;
+    if (doc == null) {
+      showMsg(context, 'Could not load your profile.', error: true);
+      return;
+    }
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => AvailabilityEditorScreen(doctor: doc)));
+  }
+
   @override
   Widget build(BuildContext context) {
     return AdaptiveScaffold(
       title: _titles[_index],
       index: _index,
       onSelect: (i) => setState(() => _index = i),
-      actions: [NotificationBell(uid: widget.uid)],
+      actions: [
+        // Availability shortcut in AppBar
+        if (_index == 0) ...[
+          IconButton(
+            icon: const Icon(Icons.schedule),
+            tooltip: 'Manage Availability',
+            onPressed: _openAvailability,
+          ),
+          IconButton(
+            icon: const Icon(Icons.receipt_long_outlined),
+            tooltip: 'View Invoices',
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => DoctorInvoicesScreen(doctorId: widget.uid))),
+          ),
+        ],
+        NotificationBell(uid: widget.uid),
+      ],
       items: const [
         NavItem(Icons.dashboard_outlined, 'Dashboard'),
         NavItem(Icons.inbox_outlined, 'Requests'),
