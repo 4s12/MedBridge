@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../theme.dart';
 import '../utils/validators.dart';
+import '../widgets/auth_layout.dart';
 import '../widgets/common.dart';
 import 'register_screen.dart';
 
@@ -122,21 +123,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
+    return AuthLayout(
+      formMaxWidth: 440,
+      builder: (context, isWide) => Form(
                 key: _formKey,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Logo
+                    // Logo header (brand panel shows it on wide screens)
+                    if (!isWide) ...[
                     Center(
                       child: Container(
                         padding: const EdgeInsets.all(18),
@@ -159,14 +155,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.grey)),
                     const SizedBox(height: 32),
-                    const Text('Welcome Back!',
-                        textAlign: TextAlign.center,
+                    ],
+                    Text('Welcome Back!',
+                        textAlign: isWide ? TextAlign.left : TextAlign.center,
                         style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.w700)),
-                    const Text('Please login to continue',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey)),
-                    const SizedBox(height: 20),
+                            fontSize: isWide ? 28 : 20,
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text('Please login to continue',
+                        textAlign: isWide ? TextAlign.left : TextAlign.center,
+                        style: const TextStyle(color: Colors.grey)),
+                    SizedBox(height: isWide ? 28 : 20),
 
                     // Role selector — Patient / Doctor only
                     const Text('Login as',
@@ -292,10 +291,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

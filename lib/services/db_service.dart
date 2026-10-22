@@ -322,20 +322,24 @@ class DB {
       'comment': comment.trim(),
       'createdAt': FieldValue.serverTimestamp(),
     });
-    // Update doctor's average rating.
-    final reviews = await col('reviews')
-        .where('doctorId', isEqualTo: doctorId)
-        .get();
-    if (reviews.docs.isNotEmpty) {
-      double total = 0;
-      for (final r in reviews.docs) {
-        total += (r.data()['rating'] as num?)?.toDouble() ?? 0;
+    try {
+      // Update doctor's average rating.
+      final reviews = await col('reviews')
+          .where('doctorId', isEqualTo: doctorId)
+          .get();
+      if (reviews.docs.isNotEmpty) {
+        double total = 0;
+        for (final r in reviews.docs) {
+          total += (r.data()['rating'] as num?)?.toDouble() ?? 0;
+        }
+        final avg = total / reviews.docs.length;
+        await col('doctors').doc(doctorId).update({
+          'rating': double.parse(avg.toStringAsFixed(1)),
+          'reviewCount': reviews.docs.length,
+        });
       }
-      final avg = total / reviews.docs.length;
-      await col('doctors').doc(doctorId).update({
-        'rating': double.parse(avg.toStringAsFixed(1)),
-        'reviewCount': reviews.docs.length,
-      });
+    } catch (e) {
+      print('Could not update doctor rating (Firebase Rules blocked it): $e');
     }
   }
 

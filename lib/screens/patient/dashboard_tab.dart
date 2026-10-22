@@ -126,11 +126,25 @@ class PatientDashboard extends StatelessWidget {
               trailing: TextButton(
                   onPressed: () => _openSearch(context),
                   child: const Text('View all'))),
-          StreamBuilder<List<Doctor>>(
-            stream: DB.doctors(),
-            builder: (context, snap) {
-              final docs = [...(snap.data ?? <Doctor>[])];
-              docs.sort((a, b) => b.rating.compareTo(a.rating));
+          ValueListenableBuilder<Map<String, List<Map<String, dynamic>>>>(
+            valueListenable: DoctorProfileScreen.sessionReviews,
+            builder: (context, reviewsMap, _) {
+              return StreamBuilder<List<Doctor>>(
+                stream: DB.doctors(),
+                builder: (context, snap) {
+                  final docs = [...(snap.data ?? <Doctor>[])];
+                  
+                  double getRating(Doctor d) {
+                    final local = reviewsMap[d.id] ?? [];
+                if (local.isEmpty) return d.rating;
+                double total = d.rating * d.reviewCount;
+                for (final r in local) {
+                  total += (r['rating'] as num).toDouble();
+                }
+                return double.parse((total / (d.reviewCount + local.length)).toStringAsFixed(1));
+              }
+
+              docs.sort((a, b) => getRating(b).compareTo(getRating(a)));
               if (!snap.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
@@ -184,7 +198,7 @@ class PatientDashboard extends StatelessWidget {
                                   children: [
                                     const Icon(Icons.star,
                                         size: 14, color: Colors.amber),
-                                    Text(' ${d.rating}',
+                                    Text(' ${getRating(d)}',
                                         style: const TextStyle(fontSize: 12)),
                                   ],
                                 ),
@@ -197,6 +211,8 @@ class PatientDashboard extends StatelessWidget {
                   },
                 ),
               );
+            },
+          );
             },
           ),
           SectionTitle('Recent Records',

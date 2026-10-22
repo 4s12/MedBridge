@@ -92,7 +92,7 @@ service cloud.firestore {
 
     // ─── Chat ────────────────────────────────────────────────────────
     match /chats/{chatId} {
-      allow read, create: if verified();
+      allow read, create, update: if verified();
       match /messages/{msgId} {
         allow read, create: if verified();
         allow update: if verified(); // for read receipts

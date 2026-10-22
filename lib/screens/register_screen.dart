@@ -5,6 +5,7 @@ import '../constants.dart';
 import '../services/auth_service.dart';
 import '../theme.dart';
 import '../utils/validators.dart';
+import '../widgets/auth_layout.dart';
 import '../widgets/common.dart';
 
 /// Password strength indicator colours.
@@ -132,21 +133,59 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
+  /// Lays out two fields side-by-side on wide screens, stacked otherwise.
+  Widget _pair(bool isWide, Widget a, Widget b) {
+    if (!isWide) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [a, const SizedBox(height: 14), b],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: a),
+        const SizedBox(width: 14),
+        Expanded(child: b),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDoctor = _role == 'doctor';
-    return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Form(
+    return AuthLayout(
+      formMaxWidth: 560,
+      mobileAppBar: AppBar(title: const Text('Create Account')),
+      builder: (context, isWide) => Form(
               key: _formKey,
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // ─── Header (wide screens only; phones use the AppBar) ───
+                  if (isWide) ...[
+                    Row(
+                      children: [
+                        IconButton(
+                          tooltip: 'Back to login',
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.arrow_back),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text('Create Account',
+                            style: TextStyle(
+                                fontSize: 28, fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 52, top: 2),
+                      child: Text('Join MedBridge in less than a minute',
+                          style: TextStyle(color: Colors.grey)),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
                   // ─── Role toggle ───
                   const Text('I am a',
                       style:
@@ -181,7 +220,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 14),
 
-                  // ─── Date of Birth ───
+                  // ─── Date of Birth + Gender ───
+                  _pair(
+                  isWide,
                   InkWell(
                     onTap: _pickDOB,
                     borderRadius: BorderRadius.circular(12),
@@ -205,7 +246,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
 
                   // ─── Gender ───
                   DropdownButtonFormField<String>(
@@ -221,6 +261,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onChanged: (v) {
                       if (v != null) setState(() => _gender = v);
                     },
+                  ),
                   ),
                   const SizedBox(height: 14),
 
@@ -282,8 +323,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // ─── Doctor-specific fields ───
                   if (isDoctor) ...[
                     const SizedBox(height: 14),
+                    _pair(
+                    isWide,
                     DropdownButtonFormField<String>(
                       initialValue: _spec,
+                      isExpanded: true,
                       decoration: const InputDecoration(
                           labelText: 'Specialization',
                           prefixIcon: Icon(Icons.healing_outlined)),
@@ -295,7 +339,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       validator: (v) =>
                           v == null ? 'Select a specialization' : null,
                     ),
-                    const SizedBox(height: 14),
                     TextFormField(
                       controller: _hospital,
                       textInputAction: TextInputAction.next,
@@ -303,6 +346,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           labelText: 'Hospital / Clinic',
                           prefixIcon: Icon(Icons.local_hospital_outlined)),
                       validator: (v) => validateRequired(v, 'Hospital'),
+                    ),
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -478,9 +522,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ],
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 

@@ -93,7 +93,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final yes = await confirmDialog(
         context, 'Logout', 'Do you want to log out of MedBridge?',
         yes: 'Logout');
-    if (yes) await AuthService.logout();
+    if (!yes || !mounted) return;
+    // Capture the navigator before the async gap.
+    final navigator = Navigator.of(context);
+    await AuthService.logout();
+    // Settings was pushed on top of AuthGate; pop back to the root route
+    // so AuthGate (which now shows the Login screen) becomes visible.
+    navigator.popUntil((route) => route.isFirst);
   }
 
   @override
